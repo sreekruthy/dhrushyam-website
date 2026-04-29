@@ -42,17 +42,17 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await api.post('/auth/logout', {
-        refreshToken: localStorage.getItem('refreshToken'),
-      });
+      await api.post('/auth/logout', { refreshToken: localStorage.getItem('refreshToken') });
     } finally {
       localStorage.clear();
       setUser(null);
     }
   };
 
+  const refreshUser = () => fetchMe();
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

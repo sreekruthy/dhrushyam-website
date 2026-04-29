@@ -7,7 +7,7 @@ const {
   playTrack, 
   uploadTrack 
 } = require('../controllers/musicController');
-const { protect } = require('../middleware/auth');
+const { protect } = require('../middleware/auth.middleware');
 
 router.get('/', getAllTracks);
 router.get('/:id', getTrack);

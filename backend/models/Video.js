@@ -71,11 +71,11 @@ const videoSchema = new mongoose.Schema(
 
 // ── Virtuals ─────────────────────────────────
 videoSchema.virtual("likeCount").get(function () {
-  return this.likedBy.length;
+  return (this.likedBy || []).length;
 });
 
 videoSchema.virtual("dislikeCount").get(function () {
-  return this.dislikedBy.length;
+  return (this.dislikedBy || []).length;
 });
 
 // Include virtuals when converting to JSON (so the API response has them)

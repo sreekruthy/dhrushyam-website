@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { addComment, getComments, deleteComment } = require('../controllers/commentsController');
-const { protect } = require('../middleware/auth');
+const { protect } = require('../middleware/auth.middleware');
 
 router.post('/:videoId', protect, addComment);
 router.get('/:videoId', getComments);

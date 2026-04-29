@@ -1,14 +1,22 @@
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
-body {
-  background: #0d0d1a;
-  color: #ffffff;
-  font-family: 'Segoe UI', sans-serif;
-  min-height: 100vh;
+:root {
+  --bg: #0f0f0f;
+  --card: #181818;
+  --border: #303030;
+  --text: #ffffff;
+  --subtext: #aaaaaa;
+  --hover: #272727;
+  --red: #ff0000;
 }
 
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #1a1a2e; }
-::-webkit-scrollbar-thumb { background: #7c3aed; border-radius: 3px;}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Roboto', sans-serif;
+}
 
+a { text-decoration: none; color: inherit; }
 
+button {
+  cursor: pointer;
+  border: none;
+}

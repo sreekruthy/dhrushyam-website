@@ -13,9 +13,9 @@ const connectDB = require("./config/db");
 // Route imports
 const authRoutes = require("./routes/auth.routes");
 const videoRoutes = require("./routes/video.routes");
-const commentRoutes = require("./routes/comment.routes");
-const musicRoutes = require("./routes/music.routes");
-const recommendationRoutes = require("./routes/recommendation.routes");
+const commentRoutes = require("./routes/comments");
+const musicRoutes = require("./routes/music");
+const recommendationRoutes = require("./routes/recommendations");
 
 const app = express();
 
