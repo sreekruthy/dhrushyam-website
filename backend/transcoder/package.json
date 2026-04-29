@@ -1,0 +1,18 @@
+{
+  "name": "dhrushyam-transcoder",
+  "version": "1.0.0",
+  "description": "FFmpeg HLS transcoding worker for Dhrushyam — Member 3",
+  "main": "worker.js",
+  "scripts": {
+    "start": "node worker.js",
+    "dev": "nodemon worker.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "fluent-ffmpeg": "^2.1.3",
+    "mongoose": "^8.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
