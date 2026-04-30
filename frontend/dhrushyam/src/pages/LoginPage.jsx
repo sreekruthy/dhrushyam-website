@@ -6,79 +6,124 @@ import { Video } from 'lucide-react';
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handle = async (e) => {
     e.preventDefault();
-    setError(''); setLoading(true);
+    setError('');
+    setLoading(true);
     try {
       await login(form.email, form.password);
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
-    } finally { setLoading(false); }
-  };
-
-  const inputStyle = {
-    width: '100%', background: '#1a1a2e', border: '1px solid #3d3d6b',
-    borderRadius: '10px', padding: '0.75rem 1rem', color: 'white',
-    fontSize: '1rem', outline: 'none', boxSizing: 'border-box',
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div style={{ minHeight: '85vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: '#1a1a2e', borderRadius: '16px', padding: '2.5rem',
-        width: '100%', maxWidth: 420, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+    <div style={{
+      minHeight: '100vh',
+      background: '#0f0f0f',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: 'white'
+    }}>
+
+      <div style={{
+        background: '#181818',
+        border: '1px solid #2a2a2a',
+        borderRadius: '12px',
+        padding: '2rem',
+        width: '100%',
+        maxWidth: 400
+      }}>
 
         {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
           <div style={{
-            width: 60, height: 60, borderRadius: '50%', margin: '0 auto 0.75rem',
-            background: 'linear-gradient(135deg, #f6ad55, #ed8936)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 55,
+            height: 55,
+            borderRadius: '50%',
+            background: '#ff0000',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 10px'
           }}>
-            <Video size={30} color="white" />
+            <Video size={26} color="white" />
           </div>
-          <h1 style={{ fontSize: '1.6rem', fontWeight: 800 }}>Welcome back</h1>
-          <p style={{ color: '#9ca3af', marginTop: 4 }}>Sign in to Dhrushyam</p>
+          <h2 style={{ fontWeight: 700 }}>Sign in</h2>
         </div>
 
         {error && (
-          <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid #dc2626',
-            borderRadius: '8px', padding: '0.75rem', color: '#f87171',
-            marginBottom: '1rem', textAlign: 'center' }}>
+          <div style={{
+            background: '#2a0000',
+            border: '1px solid red',
+            padding: '0.6rem',
+            borderRadius: '6px',
+            marginBottom: '1rem',
+            textAlign: 'center'
+          }}>
             {error}
           </div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
           <input
-            type="email" placeholder="Email" value={form.email}
+            type="email"
+            placeholder="Email"
+            value={form.email}
             onChange={e => setForm({ ...form, email: e.target.value })}
-            style={inputStyle}
+            style={{
+              background: '#121212',
+              border: '1px solid #303030',
+              padding: '0.7rem',
+              borderRadius: '6px',
+              color: 'white'
+            }}
           />
+
           <input
-            type="password" placeholder="Password" value={form.password}
+            type="password"
+            placeholder="Password"
+            value={form.password}
             onChange={e => setForm({ ...form, password: e.target.value })}
-            onKeyDown={e => e.key === 'Enter' && handle(e)}
-            style={inputStyle}
+            style={{
+              background: '#121212',
+              border: '1px solid #303030',
+              padding: '0.7rem',
+              borderRadius: '6px',
+              color: 'white'
+            }}
           />
-          <button onClick={handle} disabled={loading} style={{
-            background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
-            border: 'none', borderRadius: '10px', color: 'white',
-            padding: '0.85rem', fontSize: '1rem', fontWeight: 700,
-            cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1,
-          }}>
+
+          <button
+            onClick={handle}
+            disabled={loading}
+            style={{
+              background: '#ff0000',
+              border: 'none',
+              padding: '0.7rem',
+              borderRadius: '20px',
+              color: 'white',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </div>
 
-        <p style={{ textAlign: 'center', marginTop: '1.5rem', color: '#9ca3af' }}>
-          Don't have an account?{' '}
-          <Link to="/register" style={{ color: '#a78bfa', fontWeight: 600, textDecoration: 'none' }}>
-            Register
+        <p style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.9rem' }}>
+          New here?{' '}
+          <Link to="/register" style={{ color: '#3ea6ff' }}>
+            Create account
           </Link>
         </p>
       </div>
