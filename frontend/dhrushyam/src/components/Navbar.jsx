@@ -24,7 +24,6 @@ export default function Navbar() {
 
       <div style={{ display: 'flex', gap: 12 }}>
         <Link to="/">Home</Link>
-        <Link to="/music">Music</Link>
 
         {user ? (
           <button onClick={() => { logout(); navigate('/login'); }}>

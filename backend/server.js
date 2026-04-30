@@ -14,7 +14,6 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/auth.routes");
 const videoRoutes = require("./routes/video.routes");
 const commentRoutes = require("./routes/comments");
-const musicRoutes = require("./routes/music");
 const recommendationRoutes = require("./routes/recommendations");
 
 const app = express();
@@ -51,7 +50,6 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/auth", authRoutes);
 app.use("/api/videos", videoRoutes);
 app.use("/api/comments", commentRoutes);
-app.use("/api/music", musicRoutes);
 app.use("/api/recommendations", recommendationRoutes);
 
 // Health check
