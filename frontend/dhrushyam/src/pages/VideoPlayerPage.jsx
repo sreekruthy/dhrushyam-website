@@ -1,26 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import Hls from 'hls.js';
-import api from '../api/axios';
+import api, { API_ORIGIN } from '../api/axios';
 
 // Handles both full CDN URLs and local server paths
 function resolveUrl(path) {
   if (!path) return '';
   if (path.startsWith('http')) return path;
-  return `http://localhost:5001${path}`;
+  return `${API_ORIGIN}${path}`;
 }
 
 function formatViews(n = 0) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
   if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
   return n;
-}
-
-function formatDuration(seconds) {
-  if (!seconds) return '';
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, '0')}`;
 }
 
 function timeAgo(dateStr) {
@@ -76,8 +69,17 @@ export default function VideoPlayerPage() {
     if (!video?.hlsPath || !videoRef.current) return;
 
     const src = resolveUrl(video.hlsPath);
+    const isHls = src.includes('.m3u8');
 
     if (hlsRef.current) { hlsRef.current.destroy(); }
+    videoRef.current.removeAttribute('src');
+
+    if (!isHls) {
+      videoRef.current.src = src;
+      videoRef.current.load();
+      api.post(`/videos/${id}/view`).catch(() => {});
+      return;
+    }
 
     if (Hls.isSupported()) {
       const hls = new Hls({ startLevel: -1 });
@@ -100,7 +102,7 @@ export default function VideoPlayerPage() {
     }
 
     return () => { if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; } };
-  }, [video]);
+  }, [video, id]);
 
   const handleQuality = (e) => {
     const level = parseInt(e.target.value, 10);

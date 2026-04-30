@@ -4,10 +4,11 @@
 // ─────────────────────────────────────────────
 const router = require("express").Router();
 const { protect, optionalAuth } = require("../middleware/auth.middleware");
-const { uploadChunk } = require("../middleware/upload.middleware");
+const { uploadChunk, uploadVideo } = require("../middleware/upload.middleware");
 const {
   initUpload,
   receiveChunk,
+  createVideo,
   finalizeUpload,
   getAllVideos,
   getVideoById,
@@ -22,6 +23,7 @@ const {
 router.post("/init-upload", protect, initUpload);
 router.post("/chunk", protect, uploadChunk, receiveChunk);  // Multer runs first
 router.post("/finalize", protect, finalizeUpload);
+router.post("/", protect, uploadVideo, createVideo);
 
 // ── Standard CRUD ─────────────────────────────
 router.get("/", optionalAuth, getAllVideos);          // feed — public

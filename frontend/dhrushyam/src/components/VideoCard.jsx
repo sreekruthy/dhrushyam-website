@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
+import { API_ORIGIN } from '../api/axios';
 
 // Handles both full CDN URLs (seeded data) and local server paths (teammate's upload)
 function resolveUrl(path) {
   if (!path) return 'https://picsum.photos/seed/default/640/360';
   if (path.startsWith('http')) return path;           // already a full URL
-  return `http://localhost:5001${path}`;              // local server path
+  return `${API_ORIGIN}${path}`;                      // local server path
 }
 
 function formatViews(n) {

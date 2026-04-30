@@ -79,6 +79,23 @@ const uploadChunk = multer({
   },
 }).single("chunk"); // field name must be "chunk" from the frontend
 
+// Simple single-request upload used by the current Create Content form.
+const videoStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, RAW_DIR),
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${uuidv4()}`;
+    cb(null, `${unique}${path.extname(file.originalname) || ".mp4"}`);
+  },
+});
+
+const uploadVideo = multer({
+  storage: videoStorage,
+  fileFilter: videoFileFilter,
+  limits: {
+    fileSize: 2 * 1024 * 1024 * 1024, // 2 GB
+  },
+}).single("video");
+
 // ── Multer instance for thumbnail uploads ─────
 const THUMB_DIR = process.env.THUMB_DIR || "./uploads/thumbnails";
 if (!fs.existsSync(THUMB_DIR)) fs.mkdirSync(THUMB_DIR, { recursive: true });
@@ -142,4 +159,4 @@ const assembleChunks = (uploadDir, destPath) => {
   });
 };
 
-module.exports = { uploadChunk, uploadThumbnail, assembleChunks };
+module.exports = { uploadChunk, uploadVideo, uploadThumbnail, assembleChunks };

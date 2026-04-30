@@ -98,6 +98,44 @@ exports.receiveChunk = async (req, res, next) => {
 //
 //  Body: { videoId, uploadId, originalName }
 // ─────────────────────────────────────────────
+// POST /api/videos
+// Saves the current frontend's multipart video upload and creates a ready Video doc.
+exports.createVideo = async (req, res, next) => {
+  try {
+    const { title, description, tags, category } = req.body;
+
+    if (!title?.trim()) {
+      return res.status(400).json({ success: false, message: "Title is required" });
+    }
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "Video file is required" });
+    }
+
+    const publicPath = `/uploads/raw/${req.file.filename}`;
+    const video = await Video.create({
+      title: title.trim(),
+      description: description || "",
+      tags: tags ? tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
+      category: category || "General",
+      uploader: req.user._id,
+      rawFilePath: req.file.path,
+      hlsPath: publicPath,
+      status: "ready",
+      isPublic: true,
+    });
+
+    await video.populate("uploader", "username avatar");
+
+    res.status(201).json({
+      success: true,
+      message: "Video uploaded successfully",
+      video,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.finalizeUpload = async (req, res, next) => {
   try {
     const { videoId, uploadId, originalName } = req.body;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
   LineChart, Line, BarChart, Bar,
@@ -34,8 +34,6 @@ const inputStyle = {
    TAB 1 — Dashboard
 ═══════════════════════════════════════════════════════════════════════ */
 function Dashboard() {
-  const { user } = useAuth();
-
   /* mock analytics – replace with real API calls when backend is ready */
   const viewsData = [
     { day: 'Mon', views: 120 },

@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+export const API_BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
+
+export const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
+
 const api = axios.create({
-  baseURL: 'http://localhost:5001/api',
+  baseURL: API_BASE_URL,
 });
 
 api.interceptors.request.use((config) => {
@@ -19,10 +24,7 @@ api.interceptors.response.use(
       const refreshToken = localStorage.getItem('refreshToken');
       if (refreshToken) {
         try {
-          const { data } = await axios.post(
-            'http://localhost:5001/api/auth/refresh',
-            { refreshToken }
-          );
+          const { data } = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken });
           localStorage.setItem('accessToken', data.accessToken);
           localStorage.setItem('refreshToken', data.refreshToken);
           original.headers.Authorization = `Bearer ${data.accessToken}`;
