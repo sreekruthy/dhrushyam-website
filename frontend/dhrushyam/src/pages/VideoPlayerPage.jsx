@@ -40,7 +40,6 @@ export default function VideoPlayerPage() {
   const hlsRef = useRef();
 
   const [video, setVideo]         = useState(null);
-  const [sidebar, setSidebar]     = useState([]);
   const [comments, setComments]   = useState([]);
   const [text, setText]           = useState('');
   const [liked, setLiked]         = useState(false);
@@ -49,28 +48,27 @@ export default function VideoPlayerPage() {
   const [levels, setLevels]       = useState([]);
   const [currentLevel, setCurrentLevel] = useState(-1);
   const [loading, setLoading]     = useState(true);
+  const [subscribed, setSubscribed] = useState(false);
+  const [subLoading, setSubLoading] = useState(false);
 
-  // ── Fetch video + comments + sidebar ──────────────────────────────────────
+  // ── Fetch video + comments ────────────────────────────────────────────────
   useEffect(() => {
     setLoading(true);
-    // Fetch video first — this is critical
-api.get(`/videos/${id}`)
-  .then(vRes => {
-    const v = vRes.data.video;
-    setVideo(v);
-    setLikeCount(v.likedBy?.length || 0);
-    setLoading(false);
-  })
-  .catch(() => setLoading(false));
+    api.get(`/videos/${id}`)
+      .then(vRes => {
+        const v = vRes.data.video;
+        setVideo(v);
+        setLikeCount(v.likeCount || 0);
+        setLiked(v.hasLiked || false);
+        setDisliked(v.hasDisliked || false);
+        setSubscribed(v.isSubscribed || false);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
 
-// Fetch comments + sidebar independently — failures won't block the video
-api.get(`/comments/${id}`)
-  .then(res => setComments(res.data || []))
-  .catch(() => setComments([]));
-
-api.get('/recommendations/most-viewed')
-  .then(res => setSidebar((res.data || []).filter(s => s._id !== id).slice(0, 8)))
-  .catch(() => setSidebar([]));
+    api.get(`/comments/${id}`)
+      .then(res => setComments(res.data || []))
+      .catch(() => setComments([]));
   }, [id]);
 
   // ── HLS player setup ──────────────────────────────────────────────────────
@@ -88,6 +86,7 @@ api.get('/recommendations/most-viewed')
       hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
         setLevels(data.levels);
         videoRef.current.play().catch(() => {});
+        api.post(`/videos/${id}/view`).catch(() => {});
       });
       hls.on(Hls.Events.ERROR, (_, data) => {
         if (data.fatal) {
@@ -97,7 +96,7 @@ api.get('/recommendations/most-viewed')
       });
       hlsRef.current = hls;
     } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-      videoRef.current.src = src; // Safari native HLS
+      videoRef.current.src = src;
     }
 
     return () => { if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; } };
@@ -121,22 +120,37 @@ api.get('/recommendations/most-viewed')
   const handleLike = async () => {
     try {
       const res = await api.post(`/videos/${id}/like`);
-      setLikeCount(res.data.likes);
-      setLiked(prev => !prev);
-      if (disliked) setDisliked(false);
-    } catch (err){ 
-          if (err.response?.status === 401) alert('Please login to like videos');
-     }
+      setLikeCount(res.data.likeCount);
+      setLiked(res.data.liked);
+      if (res.data.liked) setDisliked(false);
+    } catch (err) {
+      if (err.response?.status === 401) alert('Please login to like videos');
+    }
   };
 
   const handleDislike = async () => {
     try {
-      await api.post(`/videos/${id}/dislike`);
-      setDisliked(prev => !prev);
-      if (liked) { setLiked(false); setLikeCount(c => c - 1); }
-    } catch (err) { 
+      const res = await api.post(`/videos/${id}/dislike`);
+      setDisliked(res.data.disliked);
+      if (res.data.disliked) { setLiked(false); setLikeCount(res.data.likeCount); }
+    } catch (err) {
       if (err.response?.status === 401) alert('Please login to dislike videos');
-     }
+    }
+  };
+
+  // ── Subscribe ─────────────────────────────────────────────────────────────
+  const handleSubscribe = async () => {
+    try {
+      setSubLoading(true);
+      const uploaderId = video?.uploader?._id;
+      if (!uploaderId) return;
+      const res = await api.post(`/auth/users/${uploaderId}/subscribe`);
+      setSubscribed(res.data.subscribed);
+    } catch (err) {
+      if (err.response?.status === 401) alert('Please login to subscribe');
+    } finally {
+      setSubLoading(false);
+    }
   };
 
   // ── Add comment ───────────────────────────────────────────────────────────
@@ -150,12 +164,28 @@ api.get('/recommendations/most-viewed')
 
   // ── Styles ────────────────────────────────────────────────────────────────
   const S = {
-    page:    { display: 'flex', gap: 24, padding: '20px 24px', background: '#0f0f0f', minHeight: '100vh', color: '#fff' },
-    main:    { flex: 1, minWidth: 0 },
-    sidebar: { width: 360, flexShrink: 0 },
+    page: {
+      display: 'flex',
+      justifyContent: 'center',
+      padding: '20px 24px',
+      background: '#0f0f0f',
+      minHeight: '100vh',
+      color: '#fff',
+    },
+    // Centered single-column, wider layout
+    main: {
+      width: '100%',
+      maxWidth: 960,
+    },
 
-    playerWrap: { position: 'relative', background: '#000', borderRadius: 8, overflow: 'hidden' },
-    video:      { width: '100%', display: 'block' },
+    playerWrap: {
+      position: 'relative',
+      background: '#000',
+      borderRadius: 10,
+      overflow: 'hidden',
+      aspectRatio: '16/9',
+    },
+    video: { width: '100%', height: '100%', display: 'block', objectFit: 'contain' },
 
     qualitySelect: {
       position: 'absolute', bottom: 52, right: 10, zIndex: 10,
@@ -164,9 +194,51 @@ api.get('/recommendations/most-viewed')
       borderRadius: 4, padding: '3px 8px', fontSize: 13, cursor: 'pointer',
     },
 
-    title:   { fontSize: 20, fontWeight: 700, margin: '14px 0 6px' },
-    metaRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 },
-    meta:    { color: '#aaa', fontSize: 14 },
+    title: { fontSize: 22, fontWeight: 700, margin: '14px 0 10px' },
+
+    // Row: uploader info + subscribe on left, actions on right
+    channelRow: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: 12,
+      marginBottom: 10,
+    },
+    channelLeft: { display: 'flex', alignItems: 'center', gap: 12 },
+
+    avatar: (size = 40) => ({
+      width: size, height: size, borderRadius: '50%',
+      background: '#ff0000', color: '#fff',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontWeight: 700, fontSize: size * 0.38, flexShrink: 0,
+    }),
+
+    channelName: { fontSize: 15, fontWeight: 600 },
+    subCount:    { fontSize: 13, color: '#aaa', marginTop: 1 },
+
+    subscribeBtn: (active) => ({
+      background: active ? '#272727' : '#ff0000',
+      color: active ? '#aaa' : '#fff',
+      border: 'none',
+      borderRadius: 20,
+      padding: '9px 20px',
+      fontSize: 14,
+      fontWeight: 700,
+      cursor: 'pointer',
+      transition: 'background 0.2s',
+      letterSpacing: 0.3,
+    }),
+
+    metaRow: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginBottom: 14,
+    },
+    meta: { color: '#aaa', fontSize: 14 },
 
     actions: { display: 'flex', gap: 10 },
     btn: (active) => ({
@@ -190,27 +262,6 @@ api.get('/recommendations/most-viewed')
       borderRadius: 20, padding: '10px 18px', fontWeight: 600,
       fontSize: 14, cursor: 'pointer',
     },
-
-    avatar: (size = 36) => ({
-      width: size, height: size, borderRadius: '50%',
-      background: '#ff0000', color: '#fff',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontWeight: 700, fontSize: size * 0.38, flexShrink: 0,
-    }),
-
-    // Sidebar card
-    sideCard: {
-      display: 'flex', gap: 10, marginBottom: 12,
-      textDecoration: 'none', color: '#fff',
-    },
-    sideThumb: { width: 168, height: 94, borderRadius: 6, objectFit: 'cover', flexShrink: 0, background: '#272727' },
-    sideInfo:  { flex: 1, overflow: 'hidden' },
-    sideTitle: {
-      fontSize: 13, fontWeight: 600, margin: 0, marginBottom: 4,
-      display: '-webkit-box', WebkitLineClamp: 2,
-      WebkitBoxOrient: 'vertical', overflow: 'hidden',
-    },
-    sideMeta: { fontSize: 12, color: '#aaa', margin: 0 },
   };
 
   if (loading) return (
@@ -225,15 +276,20 @@ api.get('/recommendations/most-viewed')
     </div>
   );
 
+  const uploaderName = video.uploader?.username || 'Unknown';
+
   return (
     <div style={S.page}>
-
-      {/* ── Main column ── */}
       <div style={S.main}>
 
-        {/* Player */}
+        {/* ── Player ── */}
         <div style={S.playerWrap}>
-          <video ref={videoRef} controls style={S.video} poster={resolveUrl(video.thumbnailPath)} />
+          <video
+            ref={videoRef}
+            controls
+            style={S.video}
+            poster={resolveUrl(video.thumbnailPath)}
+          />
           {levels.length > 1 && (
             <select style={S.qualitySelect} value={currentLevel} onChange={handleQuality}>
               <option value={-1}>Auto</option>
@@ -244,17 +300,33 @@ api.get('/recommendations/most-viewed')
           )}
         </div>
 
-        {/* Title */}
+        {/* ── Title ── */}
         <h2 style={S.title}>{video.title}</h2>
 
-        {/* Meta + actions */}
-        <div style={S.metaRow}>
-          <p style={S.meta}>
-            {formatViews(video.views)} views
-            {video.category ? ` · ${video.category}` : ''}
-            {video.createdAt ? ` · ${timeAgo(video.createdAt)}` : ''}
-          </p>
+        {/* ── Channel row: avatar + name + subscribe ── */}
+        <div style={S.channelRow}>
+          <div style={S.channelLeft}>
+            <div style={S.avatar(40)}>
+              {uploaderName[0].toUpperCase()}
+            </div>
+            <div>
+              <div style={S.channelName}>{uploaderName}</div>
+              {video.uploader?.subscribers != null && (
+                <div style={S.subCount}>
+                  {formatViews(video.uploader.subscribers?.length ?? 0)} subscribers
+                </div>
+              )}
+            </div>
+            <button
+              style={S.subscribeBtn(subscribed)}
+              onClick={handleSubscribe}
+              disabled={subLoading}
+            >
+              {subscribed ? 'Subscribed' : 'Subscribe'}
+            </button>
+          </div>
 
+          {/* ── Like / Dislike / Share ── */}
           <div style={S.actions}>
             <button style={S.btn(liked)} onClick={handleLike}>
               👍 {likeCount}
@@ -265,15 +337,24 @@ api.get('/recommendations/most-viewed')
             <button style={S.btn(false)} onClick={() => {
               navigator.clipboard.writeText(window.location.href);
               alert('Link copied!');
-              }}>
-                🔗 Share
-                </button>
+            }}>
+              🔗 Share
+            </button>
           </div>
         </div>
 
-        {/* Description */}
+        {/* ── Views / meta ── */}
+        <div style={S.metaRow}>
+          <p style={S.meta}>
+            {formatViews(video.views)} views
+            {video.category ? ` · ${video.category}` : ''}
+            {video.createdAt ? ` · ${timeAgo(video.createdAt)}` : ''}
+          </p>
+        </div>
+
+        {/* ── Description ── */}
         {video.description && (
-          <div style={{ background: '#181818', borderRadius: 8, padding: '12px 14px', marginTop: 14 }}>
+          <div style={{ background: '#181818', borderRadius: 8, padding: '12px 14px', marginTop: 4 }}>
             <p style={{ fontSize: 14, color: '#ccc', margin: 0, lineHeight: 1.6 }}>
               {video.description}
             </p>
@@ -287,12 +368,11 @@ api.get('/recommendations/most-viewed')
 
         <hr style={S.divider} />
 
-        {/* Comments */}
+        {/* ── Comments ── */}
         <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>
           Comments ({comments.length})
         </h3>
 
-        {/* Add comment */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 24, alignItems: 'center' }}>
           <div style={S.avatar(36)}>U</div>
           <input
@@ -305,7 +385,6 @@ api.get('/recommendations/most-viewed')
           <button onClick={addComment} style={S.postBtn}>Post</button>
         </div>
 
-        {/* Comment list */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           {comments.map(c => (
             <div key={c._id} style={{ display: 'flex', gap: 12 }}>
@@ -324,42 +403,8 @@ api.get('/recommendations/most-viewed')
             </div>
           ))}
         </div>
+
       </div>
-
-      {/* ── Sidebar ── */}
-      <div style={S.sidebar}>
-        <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 14, color: '#aaa' }}>
-          Up next
-        </h3>
-
-        {sidebar.map(s => (
-          <Link key={s._id} to={`/video/${s._id}`} style={S.sideCard}>
-            <div style={{ position: 'relative', flexShrink: 0 }}>
-              <img
-                src={resolveUrl(s.thumbnailPath)}
-                alt={s.title}
-                style={S.sideThumb}
-                onError={e => { e.target.src = `https://picsum.photos/seed/${s._id}/320/180`; }}
-              />
-              {s.duration && (
-                <span style={{
-                  position: 'absolute', bottom: 4, right: 4,
-                  background: 'rgba(0,0,0,0.82)', color: '#fff',
-                  fontSize: 11, fontWeight: 600, padding: '1px 4px', borderRadius: 3,
-                }}>
-                  {formatDuration(s.duration)}
-                </span>
-              )}
-            </div>
-            <div style={S.sideInfo}>
-              <p style={S.sideTitle}>{s.title}</p>
-              <p style={S.sideMeta}>{s.uploader?.username || 'Unknown'}</p>
-              <p style={S.sideMeta}>{formatViews(s.views)} views</p>
-            </div>
-          </Link>
-        ))}
-      </div>
-
     </div>
   );
 }

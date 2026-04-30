@@ -231,4 +231,38 @@ exports.changePassword = async (req, res, next) => {
     next(err);
   }
 };
+
+// POST /api/auth/users/:id/subscribe
+exports.toggleSubscribe = async (req, res, next) => {
+  try {
+    const targetId = req.params.id;
+    const userId = req.user._id;
+
+    if (targetId === userId.toString()) {
+      return res.status(400).json({ success: false, message: "Cannot subscribe to yourself" });
+    }
+
+    const target = await User.findById(targetId);
+    if (!target) return res.status(404).json({ success: false, message: "User not found" });
+
+    const alreadySubscribed = target.subscribers.some(id => id.equals(userId));
+
+    if (alreadySubscribed) {
+      target.subscribers = target.subscribers.filter(id => !id.equals(userId));
+    } else {
+      target.subscribers.push(userId);
+    }
+
+    await target.save();
+
+    res.json({
+      success: true,
+      subscribed: !alreadySubscribed,
+      subscriberCount: target.subscribers.length,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 console.log('✅ auth.controller loaded, exports:', Object.keys(module.exports));

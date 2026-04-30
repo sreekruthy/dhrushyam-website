@@ -210,8 +210,8 @@ exports.getVideoById = async (req, res, next) => {
     // Extra fields for authenticated users
     const response = video.toJSON();
     if (req.user) {
-      response.hasLiked = video.likedBy.some((id) => id.equals(req.user._id));
-      response.hasDisliked = video.dislikedBy.some((id) => id.equals(req.user._id));
+      response.likeCount = video.likedBy.length;
+      response.dislikeCount = video.dislikedBy.length;
       response.isSubscribed = video.uploader.subscribers.some((id) => id.equals(req.user._id));
     }
 
