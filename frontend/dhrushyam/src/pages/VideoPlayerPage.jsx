@@ -7,7 +7,7 @@ import api from '../api/axios';
 function resolveUrl(path) {
   if (!path) return '';
   if (path.startsWith('http')) return path;
-  return `http://localhost:5000${path}`;
+  return `http://localhost:5001${path}`;
 }
 
 function formatViews(n = 0) {
@@ -53,19 +53,24 @@ export default function VideoPlayerPage() {
   // ── Fetch video + comments + sidebar ──────────────────────────────────────
   useEffect(() => {
     setLoading(true);
-    Promise.all([
-      api.get(`/videos/${id}`),
-      api.get(`/comments/${id}`),
-      api.get('/videos/feed'),          // sidebar: most-viewed videos
-    ]).then(([vRes, cRes, feedRes]) => {
-      const v = vRes.data.video;
-      setVideo(v);
-      setLikeCount(v.likedBy?.length || 0);
-      setComments(cRes.data || []);
-      // exclude current video from sidebar
-      setSidebar((feedRes.data.videos || []).filter(s => s._id !== id).slice(0, 8));
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    // Fetch video first — this is critical
+api.get(`/videos/${id}`)
+  .then(vRes => {
+    const v = vRes.data.video;
+    setVideo(v);
+    setLikeCount(v.likedBy?.length || 0);
+    setLoading(false);
+  })
+  .catch(() => setLoading(false));
+
+// Fetch comments + sidebar independently — failures won't block the video
+api.get(`/comments/${id}`)
+  .then(res => setComments(res.data || []))
+  .catch(() => setComments([]));
+
+api.get('/recommendations/most-viewed')
+  .then(res => setSidebar((res.data || []).filter(s => s._id !== id).slice(0, 8)))
+  .catch(() => setSidebar([]));
   }, [id]);
 
   // ── HLS player setup ──────────────────────────────────────────────────────

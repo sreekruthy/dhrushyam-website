@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 function resolveUrl(path) {
   if (!path) return 'https://picsum.photos/seed/default/640/360';
   if (path.startsWith('http')) return path;           // already a full URL
-  return `http://localhost:5000${path}`;              // local server path
+  return `http://localhost:5001${path}`;              // local server path
 }
 
 function formatViews(n) {
