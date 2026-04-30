@@ -124,7 +124,9 @@ api.get('/recommendations/most-viewed')
       setLikeCount(res.data.likes);
       setLiked(prev => !prev);
       if (disliked) setDisliked(false);
-    } catch { /* not logged in — ignore */ }
+    } catch (err){ 
+          if (err.response?.status === 401) alert('Please login to like videos');
+     }
   };
 
   const handleDislike = async () => {
@@ -132,7 +134,9 @@ api.get('/recommendations/most-viewed')
       await api.post(`/videos/${id}/dislike`);
       setDisliked(prev => !prev);
       if (liked) { setLiked(false); setLikeCount(c => c - 1); }
-    } catch { /* not logged in — ignore */ }
+    } catch (err) { 
+      if (err.response?.status === 401) alert('Please login to dislike videos');
+     }
   };
 
   // ── Add comment ───────────────────────────────────────────────────────────
@@ -258,9 +262,12 @@ api.get('/recommendations/most-viewed')
             <button style={S.btn(disliked)} onClick={handleDislike}>
               👎
             </button>
-            <button style={S.btn(false)}>
-              🔗 Share
-            </button>
+            <button style={S.btn(false)} onClick={() => {
+              navigator.clipboard.writeText(window.location.href);
+              alert('Link copied!');
+              }}>
+                🔗 Share
+                </button>
           </div>
         </div>
 
